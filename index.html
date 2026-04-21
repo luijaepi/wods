@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WODS 3.0">
+<meta name="theme-color" content="#090909">
+<title>WODS 3.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #090909;
+  --s1: #111;
+  --s2: #181818;
+  --s3: #202020;
+  --border: #242424;
+  --text: #f0f0f0;
+  --muted: #4a4a4a;
+  --muted2: #777;
+  --mar: #e8ff47;
+  --mie: #ff4560;
+  --jue: #00e5c4;
+  --vie: #b97cff;
+  --mov: #ff9f47;
+  /* iPhone 14 Pro: Dynamic Island safe-area-inset-top ≈ 59px, home indicator ≈ 34px */
+  --sit: env(safe-area-inset-top, 0px);
+  --sib: env(safe-area-inset-bottom, 0px);
+  --sil: env(safe-area-inset-left, 0px);
+  --sir: env(safe-area-inset-right, 0px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html {
+  background: var(--bg);
+  /* Ensures background fills behind Dynamic Island */
+  background-attachment: fixed;
+}
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  /* Use dvh for dynamic viewport — handles iOS Safari toolbar show/hide */
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  /* Prevent text size adjustment on rotation */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ── HEADER ── */
+.hdr {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--bg);
+  /* Dynamic Island: padding-top must use safe-area-inset-top */
+  padding-top: var(--sit);
+  border-bottom: 1px solid var(--border);
+  /* Extend background behind Dynamic Island notch area */
+  margin-top: calc(-1 * var(--sit));
+  padding-top: calc(var(--sit) + 0px);
+}
+.hdr-inner { padding: 10px 18px 0; }
+.hdr-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.logo {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.logo span { opacity: 0.3; }
+.hdr-right {
+  display: flex;
+  gap: 8px;
+}
+.nav-pill {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  /* Apple HIG: min touch target 44pt */
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--s2);
+  color: var(--muted2);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+}
+.nav-pill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 0;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 1;
+  min-width: 70px;
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  /* min 44pt touch target */
+  min-height: 44px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── VIEWS ── */
+.view { display: none; }
+.view.active { display: block; animation: up 0.18s ease both; }
+@keyframes up { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── PAGE PADDING ── */
+/* Timer bar ~120px + home indicator ~34pt + breathing room */
+.page { padding: 0 18px 180px; }
+.log-page { padding: 0 18px 180px; }
+
+/* ── DAY HERO ── */
+.hero {
+  padding: 20px 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+.hero-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin-bottom: 6px;
+}
+.hero-title {
+  /* clamp: min 32px, preferred fluid, max 46px — prevents overflow on 393pt */
+  font-size: clamp(32px, 11vw, 46px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  text-transform: uppercase;
+  /* Allow line break on very long words like GLÚTEO/ISQUIOS */
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.hero-sub {
+  font-size: 12px;
+  color: var(--muted2);
+  margin-top: 8px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+.hero-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.htag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  /* min touch-friendly height even if small text */
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+/* ── SECTION LABEL ── */
+.sl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin: 20px 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sl::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── COLLAPSIBLE ── */
+.coll {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.coll-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.coll-lbl {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.coll-ico { color: var(--muted2); font-size: 18px; transition: transform 0.2s; line-height: 1; }
+.coll-ico.open { transform: rotate(45deg); }
+.coll-bd {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 6px 16px 14px;
+}
+.coll-bd.open { display: block; }
+.ci {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 400;
+  align-items: flex-start;
+}
+.ci:last-child { border-bottom: none; }
+.ci-dot { flex-shrink: 0; width: 5px; height: 5px; border-radius: 50%; margin-top: 7px; }
+
+/* ── WOD CARD ── */
+.wod {
+  border-radius: 14px;
+  border: 1px solid;
+  overflow: hidden;
+}
+.wod-top {
+  padding: 14px 16px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.wod-fmt {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  opacity: 0.6;
+  margin-bottom: 2px;
+}
+.wod-nm {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.wod-clk {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  opacity: 0.85;
+}
+.wod-div { height: 1px; background: rgba(255,255,255,0.07); }
+.wod-moves { padding: 10px 16px; }
+.wod-mv {
+  display: flex;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.4;
+  align-items: flex-start;
+}
+.wod-mv:last-child { border-bottom: none; }
+.wod-n {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.4;
+  flex-shrink: 0;
+  margin-top: 3px;
+  min-width: 14px;
+  font-family: 'DM Mono', monospace;
+}
+.wod-tip {
+  margin: 0 16px 14px;
+  padding: 10px 13px;
+  background: rgba(0,0,0,0.35);
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+.wod-tip b { color: #ccc; font-weight: 600; }
+
+/* ── EXERCISE CARD ── */
+.ex {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px 13px 19px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.ex-bar {
+  position: absolute;
+  left: 0; top: 10px; bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+}
+.ex-r1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ex-nm {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  flex: 1;
+}
+.ex-kg {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+  font-family: 'DM Mono', monospace;
+}
+.ex-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--s3);
+  color: var(--muted2);
+  letter-spacing: 0.06em;
+  border: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+}
+.ex-note {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+.ex-note.warn { color: #f59e0b; }
+.ex-opt-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+/* ── LOG VIEW ── */
+.log-week {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 16px;
+}
+.log-week-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.log-week-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.log-week-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted2);
+}
+.log-day-row {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.log-day-row:last-child { border-bottom: none; }
+.log-day-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.log-day-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.log-feel {
+  display: flex;
+  gap: 4px;
+}
+.feel-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--s2);
+  color: var(--muted2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace;
+  transition: all 0.1s;
+}
+.feel-btn.sel { border-color: currentColor; }
+.log-checks {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.chk-btn {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--s2);
+  color: var(--muted2);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.chk-btn.on { background: var(--s3); }
+.log-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.log-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.log-input-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted2);
+  min-width: 90px;
+  text-transform: uppercase;
+}
+.log-input {
+  flex: 1;
+  background: var(--s3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 10px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  outline: none;
+}
+.log-input:focus { border-color: var(--muted2); }
+.log-textarea {
+  width: 100%;
+  background: var(--s3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 10px;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  outline: none;
+  resize: none;
+  line-height: 1.5;
+  min-height: 56px;
+}
+.log-textarea:focus { border-color: var(--muted2); }
+.log-week-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+.log-sleep-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+}
+.sleep-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted2);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.btn-save {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: none;
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.1s;
+}
+.btn-save:active { opacity: 0.8; }
+.saved-weeks { margin-top: 20px; }
+.saved-week-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.saved-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+.saved-title { font-size: 13px; font-weight: 700; }
+.saved-summary {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted2);
+}
+.saved-body {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+}
+.saved-body.open { display: block; }
+.saved-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 400;
+}
+.saved-row:last-child { border-bottom: none; }
+.saved-key { color: var(--muted2); font-weight: 600; }
+.saved-val { font-family: 'DM Mono', monospace; font-size: 11px; text-align: right; max-width: 60%; word-break: break-word; }
+.empty-log {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* ── MOVILIDAD VIEW ── */
+.mov-hero {
+  padding: 20px 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+.mov-day-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.mov-day-tabs::-webkit-scrollbar { display: none; }
+.mov-dtab {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0 14px;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--s2);
+  color: var(--muted2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+}
+.mov-dtab.active {
+  background: var(--mov);
+  color: #111;
+  border-color: var(--mov);
+}
+.mov-block {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.mov-block-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.mov-block-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mov-block-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted2);
+}
+.mov-block-body {
+  display: none;
+  border-top: 1px solid var(--border);
+}
+.mov-block-body.open { display: block; }
+.mov-ex {
+  padding: 13px 16px 12px 20px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.mov-ex:last-child { border-bottom: none; }
+.mov-ex-bar {
+  position: absolute;
+  left: 0; top: 10px; bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--mov);
+}
+.mov-ex-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  line-height: 1.2;
+}
+.mov-ex-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 7px;
+}
+.mov-ex-note {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+.mov-ex-note b { color: #ccc; }
+.mov-fr-tag {
+  background: #ff9f4722;
+  border: 1px solid #ff9f4744;
+  color: var(--mov);
+}
+.mov-insight {
+  margin: 0 18px 14px;
+  padding: 12px 14px;
+  background: rgba(255,159,71,0.07);
+  border: 1px solid rgba(255,159,71,0.2);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--muted2);
+  line-height: 1.65;
+}
+.mov-insight b { color: var(--mov); font-weight: 600; }
+
+/* ── TIMER BAR ── */
+.tbar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(9,9,9,0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  /* iPhone 14 Pro home indicator = 34pt. Use env() with fallback */
+  padding: 12px max(18px, var(--sil)) 0 max(18px, var(--sir));
+  padding-top: 12px;
+  padding-left: max(18px, var(--sil));
+  padding-right: max(18px, var(--sir));
+  /* pb: safe area + breathing room above home indicator */
+  padding-bottom: max(18px, calc(var(--sib) + 8px));
+  z-index: 100;
+}
+.tbar-inner { display: flex; gap: 12px; align-items: center; }
+.tbar-left { flex-shrink: 0; }
+.tnum {
+  font-family: 'DM Mono', monospace;
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text);
+  transition: color 0.2s;
+  min-width: 80px;
+}
+.tnum.go { color: var(--mar); }
+.tnum.warn { color: var(--mie); }
+.tpres { display: flex; gap: 5px; margin-top: 7px; }
+.tpre {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  /* Apple HIG min touch = 44pt, these are secondary so 36pt is acceptable */
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--s2);
+  color: var(--muted2);
+  cursor: pointer;
+  transition: all 0.1s;
+  display: flex;
+  align-items: center;
+}
+.tpre:active { opacity: 0.7; transform: scale(0.95); }
+.tpre.sel { background: var(--s3); color: var(--text); border-color: var(--muted2); }
+.tbtns { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.tbtn {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  /* min 44pt touch target */
+  min-height: 44px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.08s, opacity 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tbtn:active { transform: scale(0.97); opacity: 0.85; }
+.t-go   { background: var(--mar); color: #090909; }
+.t-stop { background: var(--mie); color: #090909; }
+.t-rst  { background: var(--s2); color: var(--muted2); border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-top">
+      <div class="logo">WODS<span> 3.0</span></div>
+      <div class="hdr-right">
+        <button class="nav-pill active" id="pill-train" onclick="switchView('train')">RUTINA</button>
+        <button class="nav-pill" id="pill-mov" onclick="switchView('mov')">MOV</button>
+        <button class="nav-pill" id="pill-log" onclick="switchView('log')">LOG</button>
+      </div>
+    </div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</div>
+
+<!-- RUTINA VIEW -->
+<div class="view active" id="view-train">
+  <div class="page" id="page"></div>
+</div>
+
+<!-- MOVILIDAD VIEW -->
+<div class="view" id="view-mov">
+  <div class="page" id="mov-page"></div>
+</div>
+
+<!-- LOG VIEW -->
+<div class="view" id="view-log">
+  <div class="log-page" id="log-page"></div>
+</div>
+
+<div class="tbar">
+  <div class="tbar-inner">
+    <div class="tbar-left">
+      <div class="tnum" id="tnum">0:00</div>
+      <div class="tpres">
+        <button class="tpre" onclick="tSet(60,this)">1'</button>
+        <button class="tpre" onclick="tSet(90,this)">1'30</button>
+        <button class="tpre" onclick="tSet(120,this)">2'</button>
+        <button class="tpre" onclick="tSet(180,this)">3'</button>
+      </div>
+    </div>
+    <div class="tbtns">
+      <button class="tbtn t-go" id="tgo" onclick="tToggle()">INICIAR</button>
+      <button class="tbtn t-rst" onclick="tReset()">RESET</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════ DATA
+const DAYS = [
+  {
+    id:'mar', tab:'MAR', color:'#e8ff47',
+    eyebrow:'Martes · Pierna',
+    title:'CUÁDRICEPS',
+    sub:'Goblet Squat · Bulgarian · Dom A',
+    tags:['AMRAP 10\'','45 MIN','AYUNAS'],
+    warmup:[
+      '2 min assault bike o cinta — ritmo suave',
+      'Cat-cow ×5 + World\'s Greatest Stretch ×3/lado',
+      'Air squat ×10 lentos + Glute bridge ×12',
+      'Serie acercamiento: KB Swing ×10 ligero antes del WOD',
+    ],
+    wod:{
+      fmt:'AMRAP', nm:'AL LÍMITE', clk:'10\'',
+      moves:[
+        '10 KB Swings rusos — 24 kg',
+        '10 Box Step-ups alternos',
+        '150m Remo — sprint, no pace',
+        '→ cuenta rondas, anota tu récord',
+      ],
+      tip:'<b>Estrategia:</b> primera ronda al 85%, de ahí todo. El remo en sprint real — si mantienes conversación no estás trabajando.',
+    },
+    strength:[
+      { nm:'Goblet Squat KB', kg:'32-40 kg', sets:'3×5', rpe:'7-8', rest:'90\'\'', opt:false,
+        note:'Hombros libres. KB en el pecho, codos adentro. Profundidad según movilidad real del día.' },
+      { nm:'Bulgarian Split Squat DB', kg:'14-16 kg', sets:'3×8/lado', rpe:'8', rest:'90\'\'', opt:false,
+        note:'Rodilla trasera roza el suelo. Cuádriceps delantero trabaja. Torso neutro.' },
+      { nm:'Dominadas A — Submáximas', kg:'Peso corporal', sets:'4 × máx-1 rep', rpe:'7', rest:'90\'\'', opt:false,
+        note:'Log obligatorio — apunta reps de cada serie. +1 rep cuando salga limpio. Escápulas abajo al colgarte, codos a bolsillos al subir.' },
+      { nm:'Leg Press con pausa 2\'\'', kg:'≥80 kg', sets:'3×12', rpe:'9', rest:'60\'\'', opt:true,
+        note:'Solo si queda tiempo. Pausa abajo = no rebote. Rodilla no colapsa adentro.' },
+    ],
+    cooldown:[
+      'Colgado pasivo en barra — 40\'\'',
+      'Child\'s Pose — 40\'\'',
+      'Estiramiento cuádriceps de pie — 30\'\'/pierna',
+    ],
+  },
+  {
+    id:'mie', tab:'MIÉ', color:'#ff4560',
+    eyebrow:'Miércoles · Push',
+    title:'PECHO',
+    sub:'Bench Press · Landmine/Arnold · Dom B',
+    tags:['EMOM 12\'','45 MIN','AYUNAS'],
+    warmup:[
+      '2 min assault bike — activa hombros',
+      'Shoulder dislocates PVC ×8 — agarre ancho, sin forzar',
+      'Band pull-aparts ×12 + Push-ups lentos ×5',
+      'Acercamiento bench: 2×5 barra vacía con pausa 1\'\' arriba',
+    ],
+    wod:{
+      fmt:'EMOM', nm:'CON CARGA', clk:'12\'',
+      moves:[
+        'Min 1 — 10 DB Floor Press (18-20 kg)',
+        'Min 2 — 10 Burpees',
+        'Min 3 — 12 cal Assault Bike sprint',
+        'Min 4 — Descanso activo',
+        '→ 3 rondas completas',
+      ],
+      tip:'<b>Floor Press:</b> pausa 1\'\' en el suelo en cada rep. <b>Assault Bike:</b> sprint real, no paseo. Si sobran más de 30\'\' en algún minuto, sube la carga o las cals.',
+    },
+    strength:[
+      { nm:'Bench Press', kg:'72-80 kg', sets:'3×5', rpe:'7-8', rest:'2\'', opt:false,
+        note:'Escápulas juntas antes de tocar la barra. Bajada 2\'\' controlada. Siempre 2-3 reps en el tanque.' },
+      { nm:'Landmine Press (semanas impares)', kg:'peso moderado', sets:'3×8/lado', rpe:'8', rest:'90\'\'', opt:false,
+        note:'Ángulo ~45° = muy amigable con el hombro. Codo cerca del cuerpo, empuja hacia arriba-adelante. Primera vez: empieza ligero.' },
+      { nm:'Arnold Press rango parcial (semanas pares)', kg:'10-12 kg', sets:'3×10', rpe:'8', rest:'90\'\'', opt:false,
+        note:'Sin llegar al overhead completo — para cuando el hombro lo permita. Si duele en cualquier punto, para.' },
+      { nm:'Dominadas B — Negativas 5\'\'', kg:'Peso corporal', sets:'3×3', rpe:'8-9', rest:'2\'', opt:false,
+        note:'Salta al top o usa step. Baja MUY lento — cuenta 5 segundos. Hold de 3\'\' al final de la última rep de cada serie. Cinturón cuando domines el tempo.' },
+      { nm:'Dips lastrados', kg:'+5-10 kg', sets:'3×6', rpe:'8-9', rest:'90\'\'', opt:true,
+        note:'⚠️ Hombro: ligera inclinación adelante para pecho. Si cruje o duele → omite sin negociar.' },
+    ],
+    cooldown:[
+      'Doorway stretch — 30\'\'/lado',
+      'Child\'s Pose — 40\'\'',
+      'Colgado pasivo — 20\'\'',
+    ],
+  },
+  {
+    id:'jue', tab:'JUE', color:'#00e5c4',
+    eyebrow:'Jueves · Pull',
+    title:'ESPALDA',
+    sub:'Chest-Supported Row · Dom C · Face Pulls',
+    tags:['FOR TIME','45 MIN','AYUNAS'],
+    warmup:[
+      '2 min remo — cadencia baja, activa dorsales',
+      'Cat-cow ×5 + PVC dislocates ×8',
+      'Band pull-aparts ×12 + Colgado pasivo 20\'\'',
+      'Acercamiento Row: 2×8 con poco peso, aprieta escápula al final',
+    ],
+    wod:{
+      fmt:'FOR TIME', nm:'BATE LA MARCA', clk:'cap 12\'',
+      moves:[
+        '21 KB Swings rusos — 24 kg',
+        '15 Devil\'s Press hasta hombros — 8 kg',
+        '15 cal SkiErg sprint',
+        '9 KB Swings rusos — 24 kg',
+        '9 Burpees',
+        '→ tiempo al terminar, récord semanal',
+      ],
+      tip:'<b>Devil\'s Press:</b> hasta hombros, no overhead completo. <b>SkiErg:</b> tirón desde arriba con brazos, caderas hacia atrás. Pace sostenible en las 21 reps, todo fuera en las 9.',
+    },
+    strength:[
+      { nm:'Chest-Supported Row', kg:'50-60 kg', sets:'3×5', rpe:'7-8', rest:'90\'\'', opt:false,
+        note:'Pecho apoyado = imposible compensar con la espalda baja. Retracción escápula al final de cada rep. Pausa 1\'\' arriba.' },
+      { nm:'Dominadas C — Asistidas (banda)', kg:'Banda ligera', sets:'4×8-10', rpe:'8-9', rest:'90\'\'', opt:false,
+        note:'Misma técnica siempre. Volumen alto = adaptación. Banda más fina cada 2 semanas cuando las reps salgan limpias.' },
+      { nm:'Face Pulls', kg:'15-17 kg', sets:'3×15', rpe:'9', rest:'60\'\'', opt:true,
+        note:'Hazlo siempre que puedas — protege el hombro. Codos ARRIBA, rotación externa al final. Sube a 17 kg si 15 no desafía.' },
+    ],
+    cooldown:[
+      'Colgado pasivo — 40\'\'',
+      'Child\'s Pose — 40\'\'',
+      'Estiramiento de glúteo — 30\'\'/pierna',
+    ],
+  },
+  {
+    id:'vie', tab:'VIE', color:'#b97cff',
+    eyebrow:'Viernes · Posterior',
+    title:'GLÚTEO / ISQUIOS',
+    sub:'RDL · Hip Thrust · Chipper bestia',
+    tags:['CHIPPER','45 MIN','AYUNAS'],
+    warmup:[
+      '2 min cinta — activa piernas y caderas',
+      'Glute bridge ×15 + World\'s Greatest Stretch ×3/lado',
+      'Hip circle ×10/lado + RDL barra vacía ×8 lentos',
+      'Acercamiento RDL: 1×5 a 40 kg apretando el patrón de bisagra',
+    ],
+    wod:{
+      fmt:'CHIPPER', nm:'SIN VUELTA ATRÁS', clk:'cap 14\'',
+      moves:[
+        '20 cal Assault Bike — sprint de salida',
+        '15 KB Swings rusos — 24 kg',
+        '12 Jumping Lunges',
+        '10 Devil\'s Press hasta hombros — 8 kg',
+        '150m SkiErg',
+        '8 Burpee Step-ups',
+        '→ un solo paso por cada bloque',
+      ],
+      tip:'<b>Estrategia:</b> Assault Bike fuerte para entrar en ritmo. Devil\'s Press cuando ya estás fundido — ahí se define. Burpee Step-up: aterriza suave, rodillas agradecidas.',
+    },
+    strength:[
+      { nm:'Romanian Deadlift', kg:'55-65 kg', sets:'3×5', rpe:'7-8', rest:'90\'\'', opt:false,
+        note:'HIP HINGE puro. Rodillas semiflex, barra pegada al cuerpo. Para cuando la espalda se redondee. +5 kg respecto a semana anterior si la técnica aguanta.' },
+      { nm:'Hip Thrust con barra', kg:'50-60 kg', sets:'3×8', rpe:'8', rest:'90\'\'', opt:false,
+        note:'Barbilla al pecho en el top. No hiperextendas lumbar. Pausa 1\'\' arriba. Sube peso semanalmente si RPE baja de 7.' },
+      { nm:'Dominadas C — Asistidas (banda)', kg:'Banda ligera', sets:'4×8-10', rpe:'8-9', rest:'90\'\'', opt:true,
+        note:'Solo si queda tiempo después del RDL y Hip Thrust. Misma técnica. Si el cuerpo está fundido del chipper, déjalo.' },
+    ],
+    cooldown:[
+      'Estiramiento isquios tumbado — 30\'\'/pierna',
+      'Child\'s Pose — 40\'\'',
+      'Colgado pasivo — 30\'\'',
+      'Estiramiento de glúteo — 30\'\'/pierna',
+    ],
+  },
+];
+
+// ══════════════════════════════════════════════════════════════ STATE
+let curDay = DAYS[0];
+let curView = 'train';
+
+// ══════════════════════════════════════════════════════════════ VIEW SWITCH
+function switchView(v) {
+  curView = v;
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.querySelectorAll('.nav-pill').forEach(el => el.classList.remove('active'));
+  document.getElementById('pill-' + v).classList.add('active');
+  // Show/hide day tabs
+  document.getElementById('tabs').style.display = v === 'mov' ? 'none' : '';
+  if (v === 'log') renderLog();
+  if (v === 'mov') renderMov();
+}
+
+// ══════════════════════════════════════════════════════════════ TABS
+function renderTabs() {
+  document.getElementById('tabs').innerHTML = DAYS.map(d => `
+    <button class="tab ${d.id===curDay.id?'active':''}"
+      style="${d.id===curDay.id?`color:${d.color};border-bottom:2px solid ${d.color}`:'border-bottom:2px solid transparent'}"
+      onclick="selDay('${d.id}')">
+      ${d.tab}
+    </button>
+  `).join('');
+}
+
+function selDay(id) {
+  curDay = DAYS.find(d=>d.id===id);
+  renderTabs();
+  renderPage();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+// ══════════════════════════════════════════════════════════════ COLLAPSIBLE
+function tog(id) {
+  document.getElementById('bd'+id).classList.toggle('open');
+  document.getElementById('ic'+id).classList.toggle('open');
+}
+
+// ══════════════════════════════════════════════════════════════ RENDER PAGE
+function renderPage() {
+  const d = curDay;
+  const col = d.color;
+
+  const warmHTML = d.warmup.map(w=>`
+    <div class="ci">
+      <div class="ci-dot" style="background:${col}"></div>
+      <div>${w}</div>
+    </div>`).join('');
+
+  const coolHTML = d.cooldown.map(w=>`
+    <div class="ci">
+      <div class="ci-dot" style="background:${col}"></div>
+      <div>${w}</div>
+    </div>`).join('');
+
+  const mandatory = d.strength.filter(e=>!e.opt);
+  const optional  = d.strength.filter(e=>e.opt);
+
+  const exHTML = (arr) => arr.map(ex=>`
+    <div class="ex">
+      <div class="ex-bar" style="background:${col}"></div>
+      <div class="ex-r1">
+        <div class="ex-nm">${ex.nm}</div>
+        <div class="ex-kg" style="color:${col}">${ex.kg}</div>
+      </div>
+      <div class="ex-chips">
+        <span class="chip">${ex.sets}</span>
+        <span class="chip">RPE ${ex.rpe}</span>
+        <span class="chip">⏱ ${ex.rest}</span>
+      </div>
+      <div class="ex-note ${ex.warn?'warn':''}">${ex.note}</div>
+    </div>`).join('');
+
+  const wodMovesHTML = d.wod.moves.map((m,i)=>`
+    <div class="wod-mv">
+      <div class="wod-n">${String(i+1).padStart(2,'0')}</div>
+      <div>${m}</div>
+    </div>`).join('');
+
+  const tagsHTML = d.tags.map(t=>`
+    <span class="htag" style="color:${col};border-color:${col}44">${t}</span>`).join('');
+
+  const optHTML = optional.length ? `
+    <div class="sl">🎯 Accesorio — si queda tiempo</div>
+    ${exHTML(optional)}` : '';
+
+  document.getElementById('page').innerHTML = `
+    <div class="hero">
+      <div class="hero-eyebrow">${d.eyebrow}</div>
+      <div class="hero-title" style="color:${col}">${d.title}</div>
+      <div class="hero-sub">${d.sub}</div>
+      <div class="hero-tags">${tagsHTML}</div>
+    </div>
+
+    <div class="sl">🔆 Calentamiento — 5 min</div>
+    <div class="coll">
+      <div class="coll-hd" onclick="tog('w')">
+        <div class="coll-lbl">Warm-up</div>
+        <div class="coll-ico" id="icw">+</div>
+      </div>
+      <div class="coll-bd" id="bdw">${warmHTML}</div>
+    </div>
+
+    <div class="sl">⚡ WOD — ${d.wod.clk}</div>
+    <div class="wod" style="border-color:${col}44;background:${col}09">
+      <div class="wod-top">
+        <div>
+          <div class="wod-fmt" style="color:${col}">${d.wod.fmt}</div>
+          <div class="wod-nm">${d.wod.nm}</div>
+        </div>
+        <div class="wod-clk">${d.wod.clk}</div>
+      </div>
+      <div class="wod-div"></div>
+      <div class="wod-moves">${wodMovesHTML}</div>
+      <div class="wod-tip">💡 ${d.wod.tip}</div>
+    </div>
+
+    <div class="sl">💪 Fuerza obligatoria</div>
+    ${exHTML(mandatory)}
+    ${optHTML}
+
+    <div class="sl">🧊 Cooldown — 3 min</div>
+    <div class="coll">
+      <div class="coll-hd" onclick="tog('c')">
+        <div class="coll-lbl">Cool-down</div>
+        <div class="coll-ico" id="icc">+</div>
+      </div>
+      <div class="coll-bd" id="bdc">${coolHTML}</div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════ LOG
+const LOG_KEY = 'wods3_log';
+
+function getWeekKey() {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  const wn = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(wn).padStart(2,'0')}`;
+}
+
+// In-memory fallback: safe for WKWebView, private browsing, and file:// protocol
+let _mem = {};
+function loadLog() {
+  try { return JSON.parse(localStorage.getItem(LOG_KEY) || '{}'); }
+  catch(e) { return _mem[LOG_KEY] ? JSON.parse(_mem[LOG_KEY]) : {}; }
+}
+function saveLog(data) {
+  const s = JSON.stringify(data);
+  try { localStorage.setItem(LOG_KEY, s); } catch(e) {}
+  _mem[LOG_KEY] = s;
+}
+
+function renderLog() {
+  const wk = getWeekKey();
+  const allLog = loadLog();
+  const cur = allLog[wk] || {};
+
+  const dayRows = DAYS.map(d => {
+    const dk = d.id;
+    const dc = cur[dk] || {};
+    const feelBtns = [1,2,3,4,5].map(n=>`
+      <button class="feel-btn ${dc.feel==n?'sel':''}"
+        style="${dc.feel==n?`color:${d.color};background:${d.color}22`:'color:var(--muted2)'}"
+        onclick="setFeel('${wk}','${dk}',${n},this,'${d.color}')">${n}</button>`).join('');
+
+    const checks = [
+      {k:'wod', l:'WOD ✓'},
+      {k:'fuerza', l:'Fuerza ✓'},
+      {k:'parcial', l:'Parcial'},
+      {k:'hombro_ok', l:'Hombro OK'},
+    ].map(c=>`
+      <button class="chk-btn ${dc[c.k]?'on':''}"
+        style="${dc[c.k]?`color:${d.color};border-color:${d.color}66`:''}"
+        onclick="toggleChk('${wk}','${dk}','${c.k}',this,'${d.color}')">${c.l}</button>`).join('');
+
+    const domLabel = dk==='mar'?'Dom A (reps por serie)':dk==='jue'?'Dom C (banda)':'';
+    const domInput = domLabel ? `
+      <div class="log-input-row">
+        <div class="log-input-lbl">${domLabel}</div>
+        <input class="log-input" type="text" placeholder="ej: 4,4,3,4"
+          value="${dc.dom||''}"
+          oninput="setField('${wk}','${dk}','dom',this.value)">
+      </div>` : '';
+
+    return `
+      <div class="log-day-row">
+        <div class="log-day-hd">
+          <div class="log-day-name" style="color:${d.color}">${d.tab} — ${d.eyebrow.split(' · ')[1]}</div>
+          <div class="log-feel">${feelBtns}</div>
+        </div>
+        <div class="log-checks">${checks}</div>
+        <div class="log-inputs">
+          ${domInput}
+          <div class="log-input-row">
+            <div class="log-input-lbl">Nota</div>
+            <textarea class="log-textarea" placeholder="libre..."
+              oninput="setField('${wk}','${dk}','nota',this.value)">${dc.nota||''}</textarea>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const saved = Object.entries(allLog)
+    .filter(([k])=>k!==wk)
+    .sort((a,b)=>b[0].localeCompare(a[0]))
+    .slice(0,8)
+    .map(([k,v])=>{
+      const rows = DAYS.map(d=>{
+        const dd = v[d.id]||{};
+        const parts = [];
+        if(dd.wod) parts.push('WOD✓');
+        if(dd.fuerza) parts.push('Fuerza✓');
+        if(dd.parcial) parts.push('Parcial');
+        if(dd.dom) parts.push(`Dom:${dd.dom}`);
+        if(dd.feel) parts.push(`😤${dd.feel}`);
+        return `<div class="saved-row">
+          <div class="saved-key" style="color:${DAYS.find(x=>x.id===d.id)?.color}">${d.tab}</div>
+          <div class="saved-val">${parts.join(' · ')||'—'}</div>
+        </div>`;
+      }).join('');
+      const sueño = v.sueño ? `<div class="saved-row"><div class="saved-key">Sueño</div><div class="saved-val">${v.sueño}h · energía ${v.energia||'?'}</div></div>` : '';
+      const nota = v.nota_semana ? `<div class="saved-row"><div class="saved-key">Nota</div><div class="saved-val">${v.nota_semana}</div></div>` : '';
+      return `
+        <div class="saved-week-card">
+          <div class="saved-hd" onclick="togSaved('${k}')">
+            <div class="saved-title">${k}</div>
+            <div class="saved-summary">${Object.keys(v).length} días</div>
+          </div>
+          <div class="saved-body" id="saved-${k}">${rows}${sueño}${nota}</div>
+        </div>`;
+    }).join('');
+
+  document.getElementById('log-page').innerHTML = `
+    <div class="sl">📋 Semana actual — ${wk}</div>
+    <div class="log-week">
+      <div class="log-week-hd">
+        <div class="log-week-title">Registro semanal</div>
+        <div class="log-week-num">${wk}</div>
+      </div>
+      ${dayRows}
+      <div class="log-week-footer">
+        <div class="log-sleep-row">
+          <div class="sleep-lbl">Sueño (h)</div>
+          <input class="log-input" type="number" min="3" max="12" step="0.5"
+            placeholder="7.5" style="max-width:70px"
+            value="${cur.sueño||''}"
+            oninput="setRootField('${wk}','sueño',this.value)">
+          <div class="sleep-lbl">Energía</div>
+          <input class="log-input" type="number" min="1" max="5"
+            placeholder="3" style="max-width:55px"
+            value="${cur.energia||''}"
+            oninput="setRootField('${wk}','energia',this.value)">
+        </div>
+      </div>
+      <div style="padding:0 16px 14px">
+        <textarea class="log-textarea" placeholder="Nota de la semana — lo que sea..."
+          oninput="setRootField('${wk}','nota_semana',this.value)">${cur.nota_semana||''}</textarea>
+      </div>
+    </div>
+
+    <div class="saved-weeks">
+      <div class="sl">🗂 Historial</div>
+      ${saved || '<div class="empty-log">Aquí aparecerán tus semanas anteriores.<br>Empieza a registrar hoy.</div>'}
+    </div>
+  `;
+}
+
+function setFeel(wk, dk, n, btn, col) {
+  const log = loadLog();
+  if(!log[wk]) log[wk]={};
+  if(!log[wk][dk]) log[wk][dk]={};
+  log[wk][dk].feel = n;
+  saveLog(log);
+  // update UI
+  btn.closest('.log-feel').querySelectorAll('.feel-btn').forEach((b,i)=>{
+    const v = i+1;
+    if(v===n){ b.classList.add('sel'); b.style.color=col; b.style.background=col+'22'; }
+    else { b.classList.remove('sel'); b.style.color=''; b.style.background=''; }
+  });
+}
+
+function toggleChk(wk, dk, field, btn, col) {
+  const log = loadLog();
+  if(!log[wk]) log[wk]={};
+  if(!log[wk][dk]) log[wk][dk]={};
+  log[wk][dk][field] = !log[wk][dk][field];
+  saveLog(log);
+  const on = log[wk][dk][field];
+  btn.classList.toggle('on', on);
+  btn.style.color = on ? col : '';
+  btn.style.borderColor = on ? col+'66' : '';
+}
+
+function setField(wk, dk, field, val) {
+  const log = loadLog();
+  if(!log[wk]) log[wk]={};
+  if(!log[wk][dk]) log[wk][dk]={};
+  log[wk][dk][field] = val;
+  saveLog(log);
+}
+
+function setRootField(wk, field, val) {
+  const log = loadLog();
+  if(!log[wk]) log[wk]={};
+  log[wk][field] = val;
+  saveLog(log);
+}
+
+function togSaved(k) {
+  const el = document.getElementById('saved-'+k);
+  el.classList.toggle('open');
+}
+
+// ══════════════════════════════════════════════════════════════ TIMER
+let tSec=0,tTarget=0,tRun=false,tDown=false,tIv=null,tSelBtn=null;
+function fmt(s){const m=Math.floor(Math.abs(s)/60);return `${m}:${(Math.abs(s)%60).toString().padStart(2,'0')}`;}
+function updT(){
+  const el=document.getElementById('tnum');
+  el.textContent=fmt(tSec);
+  el.classList.remove('go','warn');
+  if(tRun){ el.classList.add(tDown&&tSec<=10?'warn':'go'); }
+}
+function tSet(s,btn){
+  tReset();
+  if(tSelBtn) tSelBtn.classList.remove('sel');
+  tSelBtn=btn; btn.classList.add('sel');
+  tTarget=s; tSec=s; tDown=true; updT();
+}
+function tToggle(){
+  if(tRun){
+    clearInterval(tIv); tRun=false;
+    document.getElementById('tgo').textContent='INICIAR';
+    document.getElementById('tgo').className='tbtn t-go';
+    updT(); return;
+  }
+  tRun=true;
+  document.getElementById('tgo').textContent='PAUSA';
+  document.getElementById('tgo').className='tbtn t-stop';
+  tIv=setInterval(()=>{
+    if(tDown){ tSec--;
+      if(tSec<=0){
+        tSec=0; clearInterval(tIv); tRun=false;
+        document.getElementById('tgo').textContent='INICIAR';
+        document.getElementById('tgo').className='tbtn t-go';
+        try{navigator.vibrate&&navigator.vibrate([200,100,200,100,400]);}catch(e){}
+        if(tSelBtn){tSelBtn.classList.remove('sel');tSelBtn=null;}
+        document.getElementById('tnum').classList.add('warn');
+        return;
+      }
+    } else { tSec++; }
+    updT();
+  },1000);
+}
+function tReset(){
+  clearInterval(tIv); tRun=false; tDown=false; tSec=0;
+  document.getElementById('tgo').textContent='INICIAR';
+  document.getElementById('tgo').className='tbtn t-go';
+  if(tSelBtn){tSelBtn.classList.remove('sel');tSelBtn=null;}
+  updT();
+}
+
+// ══════════════════════════════════════════════════════════════ MOVILIDAD DATA
+const MOV_DAYS = [
+  {
+    id:'lun', label:'LUN', sublabel:'Cadena post. + Cadera',
+    focus:'Psoas · Isquios · Dorsiflexión',
+    insight:'<b>Por qué te duele la espalda:</b> 45 min en el coche + 8h sentado = psoas e ilíaco en acortamiento permanente. Los glúteos se "apagan" y las lumbares compensan. Este bloque ataca la causa, no el síntoma.',
+    blocks:[
+      {
+        emoji:'🫁', title:'Foam roller — Activación', duration:'4 min',
+        exs:[
+          { nm:'FR Columna torácica', dur:'90\'\'', sets:'—',
+            note:'Coloca el FR bajo la zona media de la espalda. Brazos cruzados en el pecho. Deja caer el peso 30\'\' en cada segmento, avanza 2 cm hacia arriba. <b>No rodar, solo presión estática.</b>' },
+          { nm:'FR Cuádriceps + flexor de cadera', dur:'45\'\'/pierna', sets:'—',
+            note:'Boca abajo, FR bajo el cuádriceps proximal (cerca de la cadera). Busca un punto de tensión y aguanta 20-30\'\'. Efecto directo sobre el recto femoral e ilíaco.' },
+          { nm:'FR Glúteo medio + TFL', dur:'45\'\'/lado', sets:'—',
+            note:'De lado, FR bajo el glúteo medio (lateral de la cadera). Pierna de encima cruzada por delante para más presión. Este músculo es clave para estabilizar la pelvis al andar.' },
+        ]
+      },
+      {
+        emoji:'🦵', title:'Psoas + Flexores — Liberación', duration:'5 min',
+        exs:[
+          { nm:'Couch Stretch', dur:'90\'\'/pierna', sets:'—',
+            note:'Rodilla trasera en el suelo, pie apoyado en la pared o en el sofá. Pelvis neutra (no te arquees), contrae el glúteo del lado de atrás. <b>Este es el ejercicio más importante del bloque.</b> Siente el tirón en la parte anterior de la cadera.' },
+          { nm:'Half-kneeling Hip Flexor Stretch', dur:'60\'\'/lado', sets:'—',
+            note:'Una rodilla en el suelo, pie delantero en el suelo a 90°. Empuja la cadera hacia delante SIN arquear la espalda. Para intensificar: levanta el brazo del mismo lado que la rodilla en el suelo hacia arriba.' },
+        ]
+      },
+      {
+        emoji:'🦿', title:'Isquios + Dorsiflexión', duration:'5 min',
+        exs:[
+          { nm:'Estiramiento isquio activo (PNF)', dur:'8 reps/pierna', sets:'2 series',
+            note:'Tumbado boca arriba, una pierna estirada en el aire. Empuja el talón hacia el techo 5\'\' (contracción isométrica), relaja 2\'\', entonces estira un poco más. <b>El PNF gana 2-3× más flexibilidad que el estiramiento pasivo.</b>' },
+          { nm:'Dorsiflexión con pared', dur:'45\'\'/tobillo', sets:'2 series',
+            note:'De pie frente a la pared, pie adelantado ~10 cm. Lleva la rodilla hacia la pared sin levantar el talón. Si la rodilla toca la pared fácil, aleja el pie 2 cm. Trabaja el tobillo — directamente relacionado con la mecánica del squat.' },
+          { nm:'Seated Good Morning (suelo)', dur:'45\'\'', sets:'—',
+            note:'Sentado en el suelo con piernas estiradas, espalda recta. Inclínate hacia delante con la espalda larga — NO con la espalda redonda. Para cuando sientas tensión, no dolor. Activa isquios y fascía plantar a la vez.' },
+        ]
+      },
+      {
+        emoji:'🍑', title:'Glúteo + Activación Final', duration:'3 min',
+        exs:[
+          { nm:'Glute Bridge isométrico', dur:'3×10\'\' hold', sets:'3 series',
+            note:'Tumbado, pies planos. Sube la cadera, aprieta glúteos al máximo 10\'\'. Baja lento. Objetivo: re-activar los glúteos para que funcionen durante el día. Si sientes los isquios más que el glúteo, acerca los pies a las nalgas.' },
+          { nm:'Clamshell', dur:'15 reps/lado', sets:'2 series',
+            note:'De lado, caderas y rodillas a 90°. Abre la rodilla superior como una almeja sin mover la pelvis. Glúteo medio. Lento en la bajada (2\'\'). Si es muy fácil, coloca la banda encima de las rodillas.' },
+        ]
+      },
+    ]
+  },
+  {
+    id:'mar', label:'MAR', sublabel:'Tren superior + T-Spine',
+    focus:'Rotación torácica · Hombros · Pecho',
+    insight:'<b>Por qué no puedes hacer snatch:</b> La movilidad de hombros depende al 60% de la columna torácica. Si la T-spine está rígida (por oficina + volante), el húmero no puede rotar bien externamente y el supraespinoso sufre. Ataca la raíz, no el hombro directamente.',
+    blocks:[
+      {
+        emoji:'🫁', title:'Foam roller — T-Spine', duration:'3 min',
+        exs:[
+          { nm:'FR Torácico — extensión segmentaria', dur:'90\'\'', sets:'—',
+            note:'FR bajo T4-T8 (zona media alta). Manos detrás de la cabeza, codos al frente. Deja caer el peso hacia atrás en cada segmento. <b>No fuerce, deja que la gravedad haga el trabajo.</b> Avanza 2 cm hacia arriba por segmento.' },
+          { nm:'FR Dorsal ancho + Redondo mayor', dur:'45\'\'/lado', sets:'—',
+            note:'De lado, FR bajo la axila y el lat. Brazo extendido. Estos músculos traccionan el húmero hacia delante y limitan la rotación externa. Liberarlos es clave para overhead.' },
+        ]
+      },
+      {
+        emoji:'🔄', title:'Rotación torácica', duration:'4 min',
+        exs:[
+          { nm:'Rotación torácica en cuadrupedia', dur:'10 reps/lado', sets:'3 series',
+            note:'A 4 patas, una mano detrás de la cabeza. Rota el codo hacia el techo maximizando la rotación torácica. La cadera NO se mueve, solo la T-spine. Pausa 2\'\' al final del rango. Este movimiento desbloqueará el overhead más que cualquier estiramiento de hombro.' },
+          { nm:'Open Book', dur:'10 reps/lado', sets:'2 series',
+            note:'Tumbado de lado, rodillas apiladas a 90°. Brazo superior extendido al frente. Rota abriendo el brazo hacia el suelo por detrás, ojos siguen la mano. La rodilla inferior NO se despega del suelo. Mantén 3\'\' al final.' },
+        ]
+      },
+      {
+        emoji:'🦅', title:'Hombros — Rotación externa y cápsula', duration:'5 min',
+        exs:[
+          { nm:'Sleeper Stretch', dur:'45\'\'/lado', sets:'2 series',
+            note:'Tumbado sobre el hombro a trabajar, brazo a 90° apuntando al techo. Con la otra mano empuja el antebrazo hacia el suelo (rotación interna). Sientes el tirón en la parte posterior del hombro. <b>Combate la rigidez de la cápsula posterior</b>, la limitación más común en CrossFit.' },
+          { nm:'Dislocaciones con toalla/PVC', dur:'12 reps', sets:'3 series',
+            note:'Agarre ancho (más que los hombros). Lleva los brazos por encima de la cabeza hacia atrás y vuelve. Sin dolor — si duele, ensancha el agarre. Progresa semanalmente reduciendo el agarre 2 cm cada 2 semanas cuando salga sin molestias.' },
+          { nm:'Wall slide con rotación', dur:'10 reps', sets:'3 series',
+            note:'De espaldas a la pared, codos a 90° apoyados. Sube los brazos por la pared manteniendo contacto de codos y muñecas. Si pierdes contacto, regresa y trabaja solo en ese rango. Activa serratos y fija la escápula.' },
+        ]
+      },
+      {
+        emoji:'💪', title:'Pecho + Bíceps — Apertura anterior', duration:'3 min',
+        exs:[
+          { nm:'Doorway / esquina de pared — Pectoral', dur:'45\'\'/lado', sets:'2 series',
+            note:'Antebrazo apoyado en el marco de la puerta, codo a 90°. Avanza medio paso y gira el torso al lado contrario. Sientes el tirón en el pecho. Prueba en 3 posiciones del codo: alto (clavicular), medio (esternal), bajo (costal).' },
+          { nm:'Estiramiento de bíceps en suelo', dur:'30\'\'/lado', sets:'2 series',
+            note:'De rodillas, mano en el suelo con los dedos apuntando hacia los pies (hacia atrás). Siéntate ligeramente hacia atrás. Sientes el tirón en el bíceps y cara anterior del hombro. Zona frecuentemente ignorada pero muy limitante en overhead.' },
+        ]
+      },
+    ]
+  },
+  {
+    id:'mie', label:'MIÉ', sublabel:'Cadena post. + Cadera',
+    focus:'Psoas · Isquios · Dorsiflexión',
+    insight:'<b>Mitad de semana, acumulación máxima:</b> Llevas 2 días de jornada laboral. El cuerpo lleva ~100h de sedentarismo semanal acumulado. Esta sesión es la más importante de la semana para el control lumbar. Prioriza el Couch Stretch aunque te corten el tiempo.',
+    blocks:[
+      {
+        emoji:'🫁', title:'Foam roller — Activación', duration:'3 min',
+        exs:[
+          { nm:'FR Columna torácica', dur:'60\'\'', sets:'—',
+            note:'Versión rápida: 3 posiciones (T6, T8, T10), 20\'\' cada una. Suficiente para resetear la postura de la jornada laboral.' },
+          { nm:'FR Cuádriceps proximal', dur:'45\'\'/pierna', sets:'—',
+            note:'Igual que el lunes. Enfócate en el punto más tenso — suele estar más cerca de la ingle que de la rodilla.' },
+        ]
+      },
+      {
+        emoji:'🦵', title:'Psoas — Bloque prioritario', duration:'6 min',
+        exs:[
+          { nm:'Couch Stretch', dur:'2 min/pierna', sets:'—',
+            note:'<b>Hoy dale 2 minutos completos por lado.</b> Acumula el tiempo — si a los 60\'\' el tirón baja de intensidad, estás ganando longitud. Compara lado izquierdo vs derecho: el del coche (probablemente derecho) suele estar más acortado.' },
+          { nm:'Lunge con rotación de tronco', dur:'8 reps/lado', sets:'2 series',
+            note:'En posición de zancada, rodilla trasera en el suelo. Rota el torso hacia el lado de la pierna delantera, llevando el brazo hacia arriba. Combina apertura de psoas con rotación torácica.' },
+        ]
+      },
+      {
+        emoji:'🦿', title:'Isquios + Cadena posterior', duration:'5 min',
+        exs:[
+          { nm:'Estiramiento isquio PNF — variante con cinturón', dur:'8 reps/pierna', sets:'2 series',
+            note:'Si tienes una toalla o cinturón de cuero, rodea el pie. Contrae el isquio (empuja talón contra la toalla) 5\'\', relaja, gana rango. <b>Más efectivo que el estiramiento pasivo puro.</b>' },
+          { nm:'Estiramiento en "figura 4" — Piriforme', dur:'45\'\'/lado', sets:'—',
+            note:'Tumbado, cruza un tobillo sobre la rodilla contraria. Lleva las dos piernas hacia el pecho. Sientes el tirón en el glúteo profundo (piriforme). El piriforme tenso comprime el ciático — causa directa de lumbalgias irradiadas.' },
+          { nm:'Dorsiflexión con pared', dur:'45\'\'/tobillo', sets:'2 series',
+            note:'Igual que el lunes. Mide si has ganado rango — si el lunes llegabas a 10 cm, hoy intenta 11. El progreso en dorsiflexión es lento pero lineal.' },
+        ]
+      },
+      {
+        emoji:'🍑', title:'Glúteo — Activación', duration:'3 min',
+        exs:[
+          { nm:'Hip Thrust sin peso — 3 seg hold', dur:'12 reps', sets:'3 series',
+            note:'Hombros apoyados en el sofá, pies planos. Sube la cadera apretando glúteos, aguanta 3\'\', baja lento. Sin peso — es activación neurológica, no fuerza. El objetivo es sentir el glúteo ANTES de dormir para que el sistema nervioso lo "recuerde" mañana en el WOD.' },
+        ]
+      },
+    ]
+  },
+  {
+    id:'jue', label:'JUE', sublabel:'Tren superior + T-Spine',
+    focus:'Rotación torácica · Hombros · Pecho',
+    insight:'<b>Sesión de consolidación:</b> El martes atacaste la rigidez estructural. Hoy buscas integración — que los rangos nuevos se conviertan en movimiento controlado. Pon atención en el wall slide: es el test honesto de cuánta movilidad de hombro has ganado.',
+    blocks:[
+      {
+        emoji:'🫁', title:'Foam roller — T-Spine + Lat', duration:'3 min',
+        exs:[
+          { nm:'FR Torácico — 3 posiciones', dur:'60\'\'', sets:'—',
+            note:'T5, T7, T9 — 20\'\' cada una. Versión compacta del martes. Suficiente para preparar las articulaciones antes de los ejercicios de movilidad.' },
+          { nm:'FR Lat en el suelo', dur:'45\'\'/lado', sets:'—',
+            note:'Brazo extendido, FR bajo la axila. Rota ligeramente hacia el suelo para acceder al redondo mayor. El lat corto es la razón número 1 por la que el codo se dobla en el snatch overhead.' },
+        ]
+      },
+      {
+        emoji:'🔄', title:'T-Spine + Cadera interna', duration:'5 min',
+        exs:[
+          { nm:'Rotación torácica en cuadrupedia', dur:'12 reps/lado', sets:'3 series',
+            note:'Hoy añade: al final del rango, aguanta 3\'\' y desde ahí intenta ganar 2° más. Eso es entrenamiento activo de movilidad — más efectivo que el estiramiento pasivo.' },
+          { nm:'90/90 Hip Stretch', dur:'60\'\'/lado', sets:'2 series',
+            note:'Sentado en el suelo, ambas piernas a 90° (una delante, una detrás). Mantén la posición 30\'\', luego intenta bajar el torso hacia la pierna delantera otros 30\'\'. Trabaja rotación interna Y externa de cadera en la misma postura. <b>El déficit de rotación interna de cadera es causa directa de dolor lumbar.</b>' },
+        ]
+      },
+      {
+        emoji:'🦅', title:'Hombros — Consolidación', duration:'5 min',
+        exs:[
+          { nm:'Dislocaciones con toalla', dur:'12 reps', sets:'3 series',
+            note:'¿Puedes reducir el agarre 1-2 cm respecto al martes sin molestias? Si es así, progresa. Si hay tirón, mantén el mismo agarre. Consistencia > intensidad.' },
+          { nm:'Wall slide con rotación', dur:'12 reps', sets:'3 series',
+            note:'Test de la semana: ¿mantienes más contacto de muñeca-codo en la pared que el martes? Fotografía la posición si quieres trackear el progreso objetivamente.' },
+          { nm:'Band pull-apart — Rotación externa', dur:'15 reps', sets:'3 series',
+            note:'Sin banda, usa una toalla estirada entre ambas manos. Abre los brazos a los lados manteniendo los codos extendidos. Fuerza retracción escapular y rotación externa. El músculo que más necesitas para el overhead.' },
+        ]
+      },
+      {
+        emoji:'🧘', title:'Integración final', duration:'3 min',
+        exs:[
+          { nm:'Overhead squat con PVC / palo de escoba', dur:'5 reps lentos', sets:'3 series',
+            note:'Este es el test de todo el trabajo de la semana. Agarre ancho, PVC sobre la cabeza, hombros encajados. Baja en 3\'\', mantén en el fondo 2\'\'. Observa: ¿cae el pecho? ¿suben los talones? ¿colapsan los codos? Cada defecto te dice qué atacar la próxima semana.' },
+        ]
+      },
+    ]
+  },
+  {
+    id:'vie', label:'VIE', sublabel:'Full body + Cierre semanal',
+    focus:'Cadena posterior · Integración · Reset',
+    insight:'<b>Cierre de semana:</b> Combinas cadena posterior (que ha estado bajo estrés toda la semana de entrenamiento) con integración de todo lo trabajado. La sesión más larga de las cinco — tienes el fin de semana para recuperar. Dedícale los 20 minutos completos.',
+    blocks:[
+      {
+        emoji:'🫁', title:'Foam roller — Cuerpo completo', duration:'4 min',
+        exs:[
+          { nm:'FR Columna torácica', dur:'60\'\'', sets:'—',
+            note:'La semana completa de tensión acumulada. Hoy ve más lento — busca el punto más tenso y aguanta ahí hasta que ceda (30-40\'\').' },
+          { nm:'FR Cuádriceps + Flexores cadera', dur:'45\'\'/lado', sets:'—',
+            note:'Psoas y recto femoral han estado activos en los squats y RDL del viernes mañana. Dales prioridad.' },
+          { nm:'FR IT Band — lateral de pierna', dur:'45\'\'/pierna', sets:'—',
+            note:'Desde la cadera hasta la rodilla, lateral externo. Punto habitualmente doloroso — si lo es, trabaja alrededor, no encima. El IT Band no se estira (es fascia densa), pero sí puedes liberar el TFL arriba.' },
+        ]
+      },
+      {
+        emoji:'🦵', title:'Cadena posterior — Bloque completo', duration:'6 min',
+        exs:[
+          { nm:'Couch Stretch', dur:'90\'\'/pierna', sets:'—',
+            note:'Cierre semanal del psoas. Compara con el lunes: ¿notas diferencia en el tirón? Si la respuesta es sí, el sistema está funcionando.' },
+          { nm:'Pigeon Pose (variante de suelo)', dur:'90\'\'/lado', sets:'—',
+            note:'Si no llegas al Pigeon clásico, haz la versión tumbado (figura 4 contra el suelo). Tirón profundo en el piriforme y rotación externa de cadera. <b>Con 4 semanas de consistencia deberías poder hacer el Pigeon completo.</b>' },
+          { nm:'Estiramiento isquio PNF', dur:'8 reps/pierna', sets:'2 series',
+            note:'Versión de cierre. Después de toda la semana de entrenamiento, los isquios están más cálidos — saca partido y busca 1-2° más de rango que el lunes.' },
+        ]
+      },
+      {
+        emoji:'🔄', title:'Integración tren superior', duration:'4 min',
+        exs:[
+          { nm:'Open Book', dur:'10 reps/lado', sets:'2 series',
+            note:'Reset de la T-spine después de la semana. Muévete lento — prioriza el rango sobre la velocidad.' },
+          { nm:'Dislocaciones con toalla', dur:'10 reps', sets:'2 series',
+            note:'Test semanal: ¿puedes cerrar el agarre 1 cm más que el lunes sin molestias en el hombro? Si es así, has ganado movilidad medible esta semana.' },
+        ]
+      },
+      {
+        emoji:'🧘', title:'Cuerpo-mente — Cierre', duration:'3 min',
+        exs:[
+          { nm:'Child\'s Pose — variante lateral', dur:'40\'\'/lado', sets:'—',
+            note:'Desde Child\'s Pose, camina las manos al lado derecho, aguanta, luego al izquierdo. Abre lat y espacio intercostal. Respira profundo — la expansión torácica con la inhalación también trabaja la movilidad.' },
+          { nm:'Colgado pasivo (si tienes barra)', dur:'3×20\'\'', sets:'—',
+            note:'Si no tienes barra, salta esto. Si tienes, es el mejor descompresión lumbar que existe. Cuelga con el peso del cuerpo, relaja completamente la zona media. El disco intervertebral recupera hidratación al descomprimirse.' },
+        ]
+      },
+    ]
+  },
+];
+
+let curMovDay = MOV_DAYS[0];
+
+function renderMov() {
+  const d = curMovDay;
+  const tabsHTML = MOV_DAYS.map(md=>`
+    <button class="mov-dtab ${md.id===d.id?'active':''}" onclick="selMovDay('${md.id}')">${md.label}</button>
+  `).join('');
+
+  const blocksHTML = d.blocks.map((bl,bi)=>{
+    const bid = 'mb'+d.id+bi;
+    const exsHTML = bl.exs.map(ex=>`
+      <div class="mov-ex">
+        <div class="mov-ex-bar"></div>
+        <div class="mov-ex-name">${ex.nm}</div>
+        <div class="mov-ex-chips">
+          <span class="chip">${ex.dur}</span>
+          ${ex.sets!=='—'?`<span class="chip">${ex.sets}</span>`:''}
+          ${ex.nm.toLowerCase().includes('foam') || ex.nm.toLowerCase().includes('fr ')?'<span class="chip mov-fr-tag">FOAM ROLLER</span>':''}
+        </div>
+        <div class="mov-ex-note">${ex.note}</div>
+      </div>`).join('');
+    return `
+      <div class="mov-block">
+        <div class="mov-block-hd" onclick="togMovBlock('${bid}','${bid}ico')">
+          <div class="mov-block-title">${bl.emoji} ${bl.title}</div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="mov-block-meta">${bl.duration}</div>
+            <div class="coll-ico" id="${bid}ico">+</div>
+          </div>
+        </div>
+        <div class="mov-block-body" id="${bid}">${exsHTML}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('mov-page').innerHTML = `
+    <div class="mov-hero">
+      <div class="hero-eyebrow">Tarde · 19:00 · 15-20 min</div>
+      <div class="hero-title" style="color:var(--mov)">MOVILIDAD</div>
+      <div class="hero-sub">${d.focus}</div>
+      <div class="mov-day-tabs">${tabsHTML}</div>
+    </div>
+
+    <div class="mov-insight">${d.insight}</div>
+
+    ${blocksHTML}
+  `;
+}
+
+function selMovDay(id) {
+  curMovDay = MOV_DAYS.find(d=>d.id===id);
+  renderMov();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+function togMovBlock(bodyId, icoId) {
+  document.getElementById(bodyId).classList.toggle('open');
+  document.getElementById(icoId).classList.toggle('open');
+}
+
+// ══════════════════════════════════════════════════════════════ INIT
+// Auto-select mov day by current weekday
+(function(){
+  const wd = new Date().getDay(); // 0=sun,1=mon,2=tue,3=wed,4=thu,5=fri,6=sat
+  const map = {1:'lun',2:'mar',3:'mie',4:'jue',5:'vie'};
+  if(map[wd]) curMovDay = MOV_DAYS.find(d=>d.id===map[wd]) || MOV_DAYS[0];
+})();
+renderTabs();
+renderPage();
+</script>
+</body>
+</html>
